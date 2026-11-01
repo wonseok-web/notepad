@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>메모장</title>
+<style>
+:root {
+  --bg: #fcfdf8;
+  --side: #f3f7e6;
+  --hover: #e8f0cf;
+  --active: #d9ec9f;
+  --text: #2b3320;
+  --muted: #84917a;
+  --border: #e0e8c8;
+  --accent: #84cc16;
+  --accent-ink: #4d7c0f;
+  --mark: rgba(163, 230, 53, .45);
+  --danger: #e5484d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14170f;
+    --side: #1b2013;
+    --hover: #272e1a;
+    --active: #36421f;
+    --text: #e8eedb;
+    --muted: #80896f;
+    --border: #2b3320;
+    --accent: #a3e635;
+    --accent-ink: #bef264;
+    --mark: rgba(163, 230, 53, .3);
+    --danger: #ff7a7f;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+.app { display: flex; height: 100%; }
+
+/* sidebar */
+.sidebar {
+  width: 300px; flex-shrink: 0;
+  background: var(--side);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  min-width: 0;
+}
+.side-head { padding: 14px 12px 8px; display: flex; flex-direction: column; gap: 8px; }
+.brand span { color: var(--accent-ink); }
+.brand { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; font-weight: 600; font-size: 14px; }
+.brand small { color: var(--muted); font-weight: 400; }
+.search {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--bg); color: var(--text); font-size: 14px; outline: none;
+}
+.search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--mark); }
+.new-btn {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 7px 10px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--muted); font-size: 14px; text-align: left;
+}
+.new-btn { color: var(--accent-ink); font-weight: 500; }
+.new-btn:hover { background: var(--hover); color: var(--accent-ink); }
+.list { flex: 1; overflow-y: auto; padding: 4px 8px 16px; }
+.item {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  padding: 8px 10px; border-radius: 6px; margin-bottom: 1px;
+}
+.item:hover { background: var(--hover); }
+.item.active { background: var(--active); box-shadow: inset 3px 0 0 var(--accent); }
+.item .t { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .t.untitled { color: var(--muted); }
+.item .p { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .d { font-size: 11px; color: var(--muted); margin-top: 2px; }
+mark { background: var(--mark); color: inherit; border-radius: 2px; }
+.empty-list { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 12px; }
+
+/* editor */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.toolbar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  min-height: 48px;
+}
+.toolbar .spacer { flex: 1; }
+.status { font-size: 12px; color: var(--muted); }
+.icon-btn {
+  border: 0; background: transparent; padding: 6px 10px; border-radius: 6px; font-size: 13px; color: var(--muted);
+}
+.icon-btn:hover { background: var(--hover); color: var(--text); }
+.icon-btn.del:hover { color: var(--danger); }
+.back { display: none; }
+.editor { flex: 1; overflow-y: auto; }
+.page { max-width: 760px; margin: 0 auto; padding: 24px 48px 80px; }
+.title {
+  width: 100%; border: 0; outline: none; background: transparent; color: var(--text);
+  font: inherit; font-size: 40px; font-weight: 700; line-height: 1.2; padding: 0; margin-bottom: 12px;
+  resize: none; overflow: hidden; display: block;
+}
+.body {
+  width: 100%; border: 0; outline: none; background: transparent; color: var(--text);
+  font: inherit; font-size: 16px; line-height: 1.7; padding: 0; resize: none; overflow: hidden;
+  display: block; min-height: 50vh;
+}
+.title::placeholder, .body::placeholder { color: var(--muted); opacity: .6; }
+.blank { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; color: var(--muted); }
+.blank button {
+  border: 1px solid var(--border); background: var(--bg); padding: 8px 16px; border-radius: 6px; color: var(--text);
+}
+.blank button { background: var(--accent); border-color: var(--accent); color: #1f2a0a; font-weight: 600; }
+.blank button:hover { background: var(--accent); filter: brightness(.95); }
+.title, .body { caret-color: var(--accent-ink); }
+::selection { background: var(--mark); }
+[hidden] { display: none !important; }
+
+/* mobile */
+@media (max-width: 720px) {
+  .sidebar { width: 100%; border-right: 0; }
+  .main { position: fixed; inset: 0; background: var(--bg); transform: translateX(100%); transition: transform .2s ease; }
+  body.editing .main { transform: none; }
+  .back { display: inline-block; }
+  .page { padding: 8px 18px 80px; }
+  .title { font-size: 30px; }
+  .search, .body { font-size: 16px; } /* iOS 확대 방지 */
+  .toolbar { padding: calc(8px + env(safe-area-inset-top)) 8px 8px; }
+  .side-head { padding-top: calc(14px + env(safe-area-inset-top)); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="side-head">
+      <div class="brand"><span>📝 메모장</span><small id="count"></small></div>
+      <input id="search" class="search" type="search" placeholder="검색" autocomplete="off">
+      <button id="new" class="new-btn">＋ 새 메모</button>
+    </div>
+    <div id="list" class="list"></div>
+  </aside>
+
+  <section class="main">
+    <div class="toolbar">
+      <button id="back" class="icon-btn back">← 목록</button>
+      <span class="spacer"></span>
+      <span id="status" class="status"></span>
+      <button id="del" class="icon-btn del">삭제</button>
+    </div>
+    <div id="editor" class="editor">
+      <div class="page">
+        <textarea id="title" class="title" rows="1" placeholder="제목 없음"></textarea>
+        <textarea id="body" class="body" placeholder="여기에 내용을 입력하세요…"></textarea>
+      </div>
+    </div>
+    <div id="blank" class="blank" hidden>
+      <div>메모를 선택하거나 새로 만드세요</div>
+      <button id="new2">＋ 새 메모</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const KEY = 'notepad.notes.v1';
+  const $ = id => document.getElementById(id);
+  const els = {
+    list: $('list'), search: $('search'), title: $('title'), body: $('body'),
+    status: $('status'), count: $('count'), editor: $('editor'), blank: $('blank'), del: $('del'),
+  };
+
+  let notes = load();
+  let currentId = null;
+  let query = '';
+  let saveTimer = null;
+
+  function load() {
+    try {
+      const data = JSON.parse(localStorage.getItem(KEY));
+      if (Array.isArray(data)) return data;
+    } catch (e) {}
+    return [];
+  }
+  function persist() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(notes));
+      return true;
+    } catch (e) {
+      els.status.textContent = '저장 실패 (저장 공간 부족?)';
+      return false;
+    }
+  }
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function highlight(text, q) {
+    const safe = esc(text);
+    if (!q) return safe;
+    const re = new RegExp('(' + esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return safe.replace(re, '<mark>$1</mark>');
+  }
+
+  function fmtDate(ts) {
+    const d = new Date(ts), now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    if (sameDay) return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    const opts = d.getFullYear() === now.getFullYear()
+      ? { month: 'long', day: 'numeric' }
+      : { year: 'numeric', month: 'long', day: 'numeric' };
+    return d.toLocaleDateString('ko-KR', opts);
+  }
+
+  function snippet(note, q) {
+    const body = note.body.replace(/\s+/g, ' ').trim();
+    if (!q) return body.slice(0, 80);
+    const i = body.toLowerCase().indexOf(q.toLowerCase());
+    if (i < 0) return body.slice(0, 80);
+    const start = Math.max(0, i - 20);
+    return (start ? '…' : '') + body.slice(start, start + 80);
+  }
+
+  function visibleNotes() {
+    const q = query.trim().toLowerCase();
+    return notes
+      .filter(n => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
+      .sort((a, b) => b.updated - a.updated);
+  }
+
+  function renderList() {
+    const q = query.trim();
+    const items = visibleNotes();
+    els.count.textContent = notes.length ? notes.length + '개' : '';
+    if (!items.length) {
+      els.list.innerHTML = '<div class="empty-list">' +
+        (q ? '검색 결과가 없습니다' : '메모가 없습니다.<br>“새 메모”를 눌러 시작하세요') + '</div>';
+      return;
+    }
+    els.list.innerHTML = items.map(n => `
+      <button class="item ${n.id === currentId ? 'active' : ''}" data-id="${n.id}">
+        <div class="t ${n.title ? '' : 'untitled'}">${n.title ? highlight(n.title, q) : '제목 없음'}</div>
+        <div class="p">${highlight(snippet(n, q), q) || '&nbsp;'}</div>
+        <div class="d">${fmtDate(n.updated)}</div>
+      </button>`).join('');
+  }
+
+  function autosize(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  function showEditor(on) {
+    els.editor.hidden = !on;
+    els.blank.hidden = on;
+    els.del.hidden = !on;
+    if (!on) els.status.textContent = '';
+  }
+
+  function open(id, { focus = false, mobile = true } = {}) {
+    const note = notes.find(n => n.id === id);
+    if (!note) { currentId = null; showEditor(false); renderList(); return; }
+    currentId = id;
+    els.title.value = note.title;
+    els.body.value = note.body;
+    showEditor(true);
+    autosize(els.title); autosize(els.body);
+    els.status.textContent = '';
+    if (mobile) document.body.classList.add('editing');
+    renderList();
+    if (focus) (note.title ? els.body : els.title).focus();
+  }
+
+  function create() {
+    const note = { id: uid(), title: '', body: '', created: Date.now(), updated: Date.now() };
+    notes.unshift(note);
+    persist();
+    query = ''; els.search.value = '';
+    open(note.id, { focus: true });
+    els.title.focus();
+  }
+
+  function scheduleSave() {
+    const note = notes.find(n => n.id === currentId);
+    if (!note) return;
+    note.title = els.title.value.replace(/\n/g, ' ');
+    note.body = els.body.value;
+    note.updated = Date.now();
+    els.status.textContent = '저장 중…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, 300);
+    renderList();
+  }
+  function flush() {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    if (persist()) els.status.textContent = '저장됨';
+  }
+
+  function remove() {
+    const note = notes.find(n => n.id === currentId);
+    if (!note) return;
+    const label = note.title || '제목 없음';
+    if (!confirm(`“${label}” 메모를 삭제할까요?`)) return;
+    const order = visibleNotes();
+    const idx = order.findIndex(n => n.id === currentId);
+    notes = notes.filter(n => n.id !== currentId);
+    persist();
+    const next = order[idx + 1] || order[idx - 1];
+    document.body.classList.remove('editing');
+    if (next && matchMedia('(min-width: 721px)').matches) open(next.id, { mobile: false });
+    else { currentId = null; showEditor(false); renderList(); }
+  }
+
+  // events
+  els.list.addEventListener('click', e => {
+    const item = e.target.closest('.item');
+    if (item) { flush(); open(item.dataset.id); }
+  });
+  $('new').addEventListener('click', create);
+  $('new2').addEventListener('click', create);
+  els.del.addEventListener('click', remove);
+  $('back').addEventListener('click', () => { flush(); document.body.classList.remove('editing'); });
+  els.search.addEventListener('input', () => { query = els.search.value; renderList(); });
+  els.title.addEventListener('input', () => { autosize(els.title); scheduleSave(); });
+  els.title.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); els.body.focus(); }
+  });
+  els.body.addEventListener('input', () => { autosize(els.body); scheduleSave(); });
+  window.addEventListener('beforeunload', () => { if (saveTimer) flush(); });
+  window.addEventListener('resize', () => { autosize(els.title); autosize(els.body); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) flush(); });
+  window.addEventListener('storage', e => {
+    if (e.key !== KEY) return;
+    notes = load();
+    if (!notes.some(n => n.id === currentId)) { currentId = null; showEditor(false); }
+    renderList();
+  });
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); els.search.focus(); }
+  });
+
+  // init
+  showEditor(false);
+  renderList();
+  const first = visibleNotes()[0];
+  if (first && matchMedia('(min-width: 721px)').matches) open(first.id, { mobile: false });
+})();
+</script>
+</body>
+</html>
